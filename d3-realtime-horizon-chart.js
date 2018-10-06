@@ -5,7 +5,7 @@ import Promises from "@observablehq/notebook-stdlib/src/promises/index.js";
 import * as d3 from "d3";
 // console.log(html);
 const overlap = 7;
-const width = 600;
+const width = 800;
 const step = 29;
 const margin = {
   top: 30,
@@ -47,7 +47,7 @@ const xAxis = g => g
 
 const height = data.length * (step + 1) + margin.top + margin.bottom;
 
-let chart;
+
 
 const chartFct = function () {
 
@@ -65,15 +65,17 @@ const chartFct = function () {
     .style("top", (d, i) => `${i * (step + 1) + margin.top}px`)
     .property("context", function () {
       return this.getContext("2d");
-    })
-    .each(horizon);
+    });
+    //.each(horizon);
 
   const svg = d3.select(div.appendChild(DOM.svg(width, height)))
     .style("position", "relative")
     .style("font", "10px sans-serif");
 
+  // placeholder for x axis  
   const gX = svg.append("g");
 
+  // draw y axis
   svg.append("g")
     .selectAll("text")
     .data(data)
@@ -81,8 +83,9 @@ const chartFct = function () {
     .attr("x", 4)
     .attr("y", (d, i) => (i + 0.5) * (step + 1) + margin.top)
     .attr("dy", "0.35em")
-    .text((d, i) => i);
+    .text((d, i) => i + 'TTT') ;
 
+  // mouse over rule  
   const rule = svg.append("line")
     .attr("stroke", "#000")
     .attr("y1", margin.top - 6)
@@ -120,12 +123,12 @@ const chartFct = function () {
     canvas.data(data).each(horizon);
     gX.call(xAxis);
   };
-  chart = div;
   return div;
+  
 };
 
-const chartTriggerFct = async function* () {
-  const period = 250,
+const chartTriggerFct = async function* (div) {
+  const period = 500,
     m = data[0].length;
   const tail = data.map(d => d.subarray(m - 1, m));
   while (true) {
@@ -134,28 +137,24 @@ const chartTriggerFct = async function* () {
     yield Promises.when(then, then);
     for (const d of data) d.copyWithin(0, 1, m), d[m - 1] = walk(d[m - 1]);
     x.domain([then - period * width, then]);
-    chart.update(tail);
+    div.update(tail);
   }
 };
 
 
 const notebook = async () => {
+
   const div = chartFct();
-  d3.select("body").append(() => div);
+  d3.select("body").append(() => div );
 
 
-  const trigger = chartTriggerFct();
+  const trigger = chartTriggerFct(div);
 
-  const triggerRec = async () => {
+  (async () => {
     while (true) {
-      // await Promises.delay(100/6);
       await trigger.next().then( t => console.log(t.value));
-      // console.log(time);
     }
-  };
-  triggerRec();
-
-
-
+  })();
+  
 };
 export default notebook;
